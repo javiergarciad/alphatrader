@@ -37,6 +37,7 @@ class CSVDataHandler(DataFeed):
         handler = CSVDataHandler('historical_data.csv', 'AAPL', 'XYZ Broker', redis_client)
         handler.publish_latest_price()
     """
+
     def __init__(self, csv_file, ticket, broker, redis_client, delay=1):
         self.ticket = ticket
         self.broker = broker
@@ -47,7 +48,6 @@ class CSVDataHandler(DataFeed):
 
     def get_ticket(self):
         return self.get_ticket()
-
 
     def _get_data_type(self, header):
         if any(col in header for col in ["open", "high", "low", "close"]):
@@ -89,7 +89,12 @@ class CSVDataHandler(DataFeed):
             yield message
 
     def publish_latest_price(self):
+        """
+        Publishes each data point to the Redis server with a delay.
+
+        Returns:
+            None
+        """
         for message in self.generate_data_feed():
             self.redis_client.publish("prices_feed", message)
             time.sleep(self.delay)  # Simulate data feed delay
-
