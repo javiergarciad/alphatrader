@@ -11,7 +11,7 @@ class DataFeed(ABC):
         pass
 
     @abstractmethod
-    def get_latest(self):
+    def publish_latest_price(self):
         pass
 
-    
+
