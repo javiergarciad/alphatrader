@@ -1,8 +1,11 @@
 import csv
+from pathlib import Path
 import time
+from src.common.tools import get_project_root
 
 from src.feeds import DataFeed
 import logging
+import redis
 
 logger = logging.getLogger(__name__)
 
@@ -50,18 +53,19 @@ class CSVDataHandler(DataFeed):
         return self.get_ticket()
 
     def _get_data_type(self, header):
-        if any(col in header for col in ["open", "high", "low", "close"]):
+        lowercase_header = [col.lower() for col in header]
+        if any(col in lowercase_header for col in ["open", "high", "low", "close"]):
             return "candle"
-        elif any(col in header for col in ["bid", "ask"]):
+        elif any(col in lowercase_header for col in ["bid", "ask"]):
             return "tick"
         else:
             logger.error("Data can´t be identify as candle or tick")
             raise ValueError()
 
-    def generate_data_feed(self):
+    def load_data(self):
         with open(self.csv_file, "r") as file:
             reader = csv.DictReader(file)
-            header = next(reader)  # Get the header row
+            header = reader.fieldnames
             data_type = self._get_data_type(header)
 
             for row in reader:
@@ -84,7 +88,7 @@ class CSVDataHandler(DataFeed):
                         "adj close",
                         "volume",
                     ]:
-                        message[col] = row[col]
+                        message[col.lower()] = row[col]
 
             yield message
 
@@ -95,6 +99,17 @@ class CSVDataHandler(DataFeed):
         Returns:
             None
         """
-        for message in self.generate_data_feed():
+        for message in self.load_data():
             self.redis_client.publish("prices_feed", message)
             time.sleep(self.delay)  # Simulate data feed delay
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    redis_client = redis.Redis(
+        host="localhost",
+        port=6379,
+    )
+    csv_file = Path(get_project_root(), "data", "AAPL.csv")
+    handler = CSVDataHandler(csv_file, "AAPL", "XYZ Broker", redis_client)
+    handler.publish_latest_price()
