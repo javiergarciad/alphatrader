@@ -19,35 +19,52 @@ class DataBus:
         - logger: A logger object for logging errors and messages.
         """
         self.subscribers = []
+        self.channels = []
         self.failed_deliveries = []
         self.logger = logging.getLogger("DataBus")
 
-    def subscribe(self, callback):
+    def subscribe(self, channel, subscriber):
         """
-        Subscribe a callback function to receive data updates.
+        Subscribes a subscriber to a specific channel.
 
         Args:
-        - callback: The callback function to be subscribed.
-        """
-        self.subscribers.append(callback)
+            channel (str): The name of the channel.
+            subscriber (callable): The subscriber function or object.
 
-    def publish(self, data):
+        Returns:
+            None
         """
-        Publish data to all subscribers.
+        if channel not in self.channels:
+            self.channels[channel] = []
+
+        if subscriber not in self.channels[channel]:
+            self.channels[channel].append(subscriber)
+        else:
+            logging.warning(f"Subscriber already exists in channel: {channel}")
+
+
+
+    def publish(self, channel, data):
+        """
+        Publishes data to a specific channel, notifying all subscribers.
 
         Args:
-        - data: The data to be published.
+            channel (str): The name of the channel.
+            data: The data to be published.
 
-        Exceptions:
-        - Any exceptions raised during data delivery are caught and logged. Failed deliveries
-          are stored in the 'failed_deliveries' list for retry.
+        Returns:
+            None
         """
-        for subscriber in self.subscribers:
-            try:
-                subscriber(data)
-            except Exception as e:
-                self.logger.error(f"Failed to deliver data to subscriber: {e}")
-                self.failed_deliveries.append((subscriber, data))
+        if channel in self.channels:
+            for subscriber in self.channels[channel]:
+                try:
+                    subscriber(data)
+                except Exception as e:
+                    logging.error(f"Error while publishing data to {channel}: {e}")
+        else:
+            logging.warning(data)
+            # logging.warning(f"No subscribers found for channel: {channel}")
+
 
     def retry_failed_deliveries(self):
         """

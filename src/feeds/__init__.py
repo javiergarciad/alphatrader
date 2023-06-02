@@ -11,7 +11,7 @@ class DataFeed(ABC):
         pass
 
     @abstractmethod
-    def publish_latest_price(self):
+    def run(self):
         pass
 
 
