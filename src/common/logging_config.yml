@@ -1,0 +1,55 @@
+version: 1
+disable_existing_loggers: False
+
+filters:
+  error_filter:
+    (): src.common.logging_setup.ErrorFilter
+  info_filter:
+    (): src.common.logging_setup.InfoFilter
+
+formatters:
+    simple:
+        (): src.common.logging_setup.UTCFormatter
+        format: '%(asctime)s %(levelname)s [%(name)s:%(lineno)d] %(message)s'
+        datefmt: '%Y-%m-%d %H:%M:%S'
+
+handlers:
+    console:
+        class: logging.StreamHandler
+        level: NOTSET
+        formatter: simple
+        stream: ext://sys.stdout
+
+    info_file_handler:
+        class: logging.handlers.RotatingFileHandler
+        level: INFO
+        formatter: simple
+        filename: logs/info.log
+        maxBytes: 10485760
+        backupCount: 5,
+        encoding: utf8
+        filters: [ info_filter ]
+
+    error_file_handler:
+        class: logging.handlers.RotatingFileHandler
+        level: WARNING
+        formatter: simple
+        filename: logs/errors.log
+        maxBytes: 10485760
+        backupCount: 5,
+        encoding: utf8
+        filters: [ error_filter ]
+
+loggers:
+    my_module:
+        level: ERROR
+        handlers:
+          - console
+        propagate: False
+
+root:
+    level: NOTSET
+    handlers:
+      - console
+      - info_file_handler
+      - error_file_handler
